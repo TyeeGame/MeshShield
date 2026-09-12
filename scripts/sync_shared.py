@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 p = argparse.ArgumentParser()
 p.add_argument('--check', action='store_true')
 a = p.parse_args()
-for project in ('argon', 'xenon'):
+for project in ('argon',):
     for source in (ROOT / 'shared').glob('*.h'):
         dest = ROOT / 'firmware' / project / 'src' / source.name
         if a.check:

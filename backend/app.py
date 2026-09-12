@@ -64,6 +64,7 @@ def create_app(simulate=True, port=None, z=3.0):
         view = state.view()
         if simulate and bridge.transport:
             view['simulation_mode'] = bridge.transport.gateway.modes[2]
+        view['traffic_mode'] = view.get('simulation_mode', bridge.traffic.mode)
         return view
 
     @app.post('/api/command')
@@ -77,8 +78,8 @@ def create_app(simulate=True, port=None, z=3.0):
     async def start_training():
         if not state.online() or any(p for p in state.pending.values()) or any(r['state'] != 'HEALTHY' for r in state.view()['nodes']):
             raise HTTPException(409, 'Both nodes must be healthy, online, and in NORMAL mode')
-        if simulate and bridge.transport and bridge.transport.gateway.modes[2] != 'NORMAL':
-            raise HTTPException(409, 'Set simulated node 2 to NORMAL before training')
+        if (simulate and bridge.transport and bridge.transport.gateway.modes[2] != 'NORMAL') or (not simulate and bridge.traffic.mode != 'NORMAL'):
+            raise HTTPException(409, 'Set virtual device 2 to NORMAL before training')
         state.detector.start()
         state.gap = True
         state.incident(None, 'Clean baseline training started; keep both nodes NORMAL')
@@ -97,14 +98,18 @@ def create_app(simulate=True, port=None, z=3.0):
         state.auto = c.enabled
         return {'enabled': state.auto}
 
+    @app.post('/api/traffic/mode')
     @app.post('/api/simulation/mode')
     async def mode(c: ModeRequest):
-        if not simulate:
-            raise HTTPException(404, 'Simulation controls are unavailable in hardware mode')
+        if not simulate and (not state.online() or state.ingress != 'usb_virtual'):
+            raise HTTPException(409, 'Connect the USB-only Argon firmware first')
         if bridge.transport is None:
             raise HTTPException(409, 'Simulator is starting')
         # Bridge reads run in one thread, assignment is an atomic setting update.
-        bridge.transport.gateway.modes[2] = c.mode
+        if simulate:
+            bridge.transport.gateway.modes[2] = c.mode
+        else:
+            bridge.traffic.set_mode(c.mode)
         state.known_attack = {2} if c.mode != 'NORMAL' else set()
         if state.detector.training:
             state.detector.reset(2)

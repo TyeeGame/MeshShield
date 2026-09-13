@@ -52,7 +52,7 @@ function card(n, online) {
 
     const name=text('div','');
 
-    name.append(text('span',n.node===1?'WIRE · 0x21 · NORMAL SOURCE':'WIRE1 · 0x22 · BUTTON SOURCE','eyebrow'),text('h2',`Virtual device ${n.node}`));
+    name.append(text('span',n.node===1?'SIMULATED ENDPOINT · NORMAL SOURCE':'SIMULATED ENDPOINT · SELECTABLE TRAFFIC','eyebrow'),text('h2',`Virtual device ${n.node}`));
 
     const badge=text('span','','status');header.append(name,badge);
 

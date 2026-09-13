@@ -1,0 +1,26 @@
+/* Inter is served locally so demo networking does not require a font CDN. */
+@font-face {
+  font-family: Inter;
+  src: url('/static/fonts/InterVariable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --navy: #0d1b2a;
+  --surface: #1b263b;
+  --border: #415a77;
+  --slate: #778da9;
+  --text: #e0e1dd;
+  /* Status colors remain distinct from the neutral product palette. */
+  --success: #5be0b3;
+  --warning: #f5c567;
+  --danger: #fa827b;
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-synthesis: none;
+  font-optical-sizing: auto;
+  color: var(--text);
+  background: var(--navy);
+}

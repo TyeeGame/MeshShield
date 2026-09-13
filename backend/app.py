@@ -68,6 +68,7 @@ def create_app(simulate=True, port=None, z=3.0, lan_host=None):
         local = request.client is not None and request.client.host in ('127.0.0.1', '::1', 'testclient')
         # Partners can use the message page, but cannot change operator settings.
         public_paths = {'/messages', '/static/messages.js', '/static/messages.css',
+                        '/static/theme.css', '/static/fonts/InterVariable.woff2',
                         '/api/messages/status', '/api/messages/send', '/api/messages/inbox'}
         if not local and (not lan_host or request.url.path not in public_paths):
             from fastapi.responses import JSONResponse

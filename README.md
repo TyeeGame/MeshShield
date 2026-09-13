@@ -1,3 +1,7 @@
+Once setup, run:
+.\.venv\Scripts\python.exe -m backend --port COM4
+
+
 # MeshShield
 
 A wired IoT application-layer security demo: two Particle Xenons → independent I²C buses → Particle Argon → USB → Python dashboard. Xenon 1 stays normal. Xenon 2's external button cycles normal, invalid-type, 20 Hz flood, and 4 Hz anomaly. The Argon enforces rules locally; a learned statistical rate detector on the laptop can request temporary containment.

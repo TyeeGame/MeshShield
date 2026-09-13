@@ -39,3 +39,7 @@ header{display:block}
 .code-row input{flex:1 1 330px;min-width:0;font-family:monospace}
 .code-row button{flex:0 0 auto}
 
+input, textarea { line-height: 1.5; }
+input::placeholder, textarea::placeholder { color: var(--slate); opacity: 1; }
+label { font-size: 13px; }
+label span { display: block; margin-top: 4px; font-size: 12px; }

@@ -62,3 +62,8 @@ tbody tr:hover { background: var(--navy); }
 .table-wrap { border: 1px solid var(--border); border-radius: 8px; }
 
 .graph { border: 1px solid var(--border); }
+
+.metric strong { font-variant-numeric: tabular-nums; letter-spacing: -.7px; }
+.rates, .freshness, #training { font-variant-numeric: tabular-nums; }
+.node-header { gap: 16px; }
+.node-header .eyebrow { display: block; font-size: 9px; letter-spacing: 1px; line-height: 1.6; }

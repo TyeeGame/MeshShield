@@ -16,14 +16,17 @@ struct Policy {
         expire(now);
         Reason r=validate(p,len);
         if(r==IS_EMPTY) return r;
+        // Dropping a quarantined packet must not restart the countdown.
         if(remaining(now)) return QUARANTINE;
         if(r==ALLOWED) {
+            // Each valid packet spends one token; refill five tokens per second.
             tokens += float(uint32_t(now-lastRefill))*0.005f;
             if(tokens>5) tokens=5;
             lastRefill=now;
             if(tokens>=1) tokens-=1; else r=RATE_LIMIT;
         }
         if(r!=ALLOWED) {
+            // Keep only recent violations; three within ten seconds trigger quarantine.
             unsigned keep=0;
             for(unsigned i=0;i<violationCount;i++) if(uint32_t(now-violations[i])<10000) violations[keep++]=violations[i];
             violationCount=keep; violations[violationCount++]=now;

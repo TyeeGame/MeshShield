@@ -32,6 +32,7 @@ class Detector:
         self.reset()
 
     def finish(self):
+        # Freeze a normal rate and threshold after enough clean training windows.
         if not self.training or any(len(s) < self.TRAIN_WINDOWS for s in self.samples.values()):
             raise ValueError('Need 12 complete clean windows per node (at least 60 seconds).')
         for n, samples in self.samples.items():
@@ -42,6 +43,7 @@ class Detector:
         self.reset()
 
     def observe(self, node, duration_ms, row, complete=True):
+        # Missing data or blocked traffic would distort the learned normal rate.
         dirty = (not complete or duration_ms < 800 or duration_ms > 1500 or
                  row['seen_age_ms'] < 0 or row['seen_age_ms'] > 2500 or
                  row['transport'] or row['queue_overflow'] or row['contaminated'] or
@@ -71,6 +73,7 @@ class Detector:
         b = self.baselines.get(node)
         if not b:
             return None
+        # Require two high-rate windows so one short spike does not trigger an alert.
         self.streak[node] = self.streak[node] + 1 if rate > b['threshold'] else 0
         if self.streak[node] < 2:
             self.alerts.pop(node, None)

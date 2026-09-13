@@ -49,6 +49,7 @@ void ack(const mesh::Command& c,const char* status,bool duplicate,uint32_t now) 
 void acceptTraffic(unsigned i,const uint8_t* data,size_t read,uint32_t after);
 void command(const char* line,uint32_t now) {
     if(!strncmp(line,"K,",2)) {
+        // The trusted USB host installs the approved sender code.
         uint32_t boot=0,id=0;uint8_t key[16];
         if(mesh::parseMessageKey(line,boot,id,key) && boot==session) {
             memcpy(messageKey,key,sizeof messageKey);messageConfigured=true;
@@ -58,6 +59,7 @@ void command(const char* line,uint32_t now) {
         return;
     }
     if(!strncmp(line,"M,",2)) {
+        // The Argon decides whether a real message is allowed or blocked.
         uint32_t boot=0,id=0;uint8_t key[16],body[mesh::MESSAGE_MAX];size_t size=0;
         if(!mesh::parseMessage(line,boot,id,key,body,size) || boot!=session || !messageConfigured) {
             emit("error","\"reason\":\"malformed_command\"");return;
@@ -66,9 +68,11 @@ void command(const char* line,uint32_t now) {
         lastMessageId=id;
         uint8_t difference=0;for(unsigned i=0;i<16;i++) difference|=key[i]^messageKey[i];
         unsigned slot=difference?1:0;
+        // Separate buckets keep unauthorized senders from quarantining approved senders.
         uint8_t packet[mesh::PACKET_SIZE];mesh::encode(packet,difference?127:1,id,now,0,0);
         mesh::Reason result=messagePolicies[slot].evaluate(packet,sizeof packet,now);
         const char* reason=result==mesh::UNKNOWN_TYPE?"unauthorized":mesh::reasonName(result);
+        // Return the message ID so the host can match this decision to its queued text.
         emit("message_decision","\"id\":%lu,\"slot\":%u,\"reason\":\"%s\",\"quarantine_ms\":%lu",
              (unsigned long)id,slot+1,reason,(unsigned long)messagePolicies[slot].remaining(now));
         return;

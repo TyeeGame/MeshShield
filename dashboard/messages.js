@@ -24,6 +24,7 @@ el('lan-form').addEventListener('submit',async event=>{
   finally{el('save-address').disabled=false;}
 });
 async function api(url, options={}) {
+  // A stopped backend should show an error instead of leaving the page waiting forever.
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),7000);
   try {
@@ -49,6 +50,7 @@ el('send-form').addEventListener('submit',async event=>{
   finally{sending=false;await refresh();}
 });
 el('inbox-form').addEventListener('submit',event=>{event.preventDefault();readerKey=el('inbox-key').value.trim();el('inbox').replaceChildren();refresh();});
+// Render participant text as text, never as executable HTML.
 function rows(target,items,render){const nodes=items.map(item=>{const li=document.createElement('li');render(li,item);return li;});target.replaceChildren(...nodes);}
 async function refresh(){
   if(polling)return;polling=true;

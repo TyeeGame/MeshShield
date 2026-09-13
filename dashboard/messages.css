@@ -61,3 +61,15 @@ section { border-radius: 10px; }
 #connection[data-state="ready"] { color: var(--success); border-color: var(--success); }
 #connection[data-state="waiting"] { color: var(--warning); border-color: var(--warning); }
 #connection[data-state="offline"] { color: var(--danger); border-color: var(--danger); }
+
+@media (max-width: 820px) {
+  .columns { grid-template-columns: 1fr; }
+  header { flex-wrap: wrap; }
+  h1 { letter-spacing: -.7px; }
+}
+@media (max-width: 480px) {
+  section { padding: 20px 16px; }
+  .code-row input { flex-basis: 100%; }
+  .action input { min-width: 0; }
+  .code-row button { width: 100%; }
+}

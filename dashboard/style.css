@@ -67,3 +67,15 @@ tbody tr:hover { background: var(--navy); }
 .rates, .freshness, #training { font-variant-numeric: tabular-nums; }
 .node-header { gap: 16px; }
 .node-header .eyebrow { display: block; font-size: 9px; letter-spacing: 1px; line-height: 1.6; }
+
+@media (max-width: 740px) {
+  .node-header { align-items: flex-start; }
+  .rates { flex-wrap: wrap; gap: 8px 20px; }
+  .connection strong { font-size: 10px; line-height: 1.5; }
+  .metrics { gap: 8px; }
+  .metric strong { font-size: 23px; }
+}
+@media (max-width: 420px) {
+  header { flex-wrap: wrap; gap: 16px; }
+  .connection { max-width: none; align-items: flex-start; text-align: left; }
+}

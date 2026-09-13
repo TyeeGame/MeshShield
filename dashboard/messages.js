@@ -62,7 +62,7 @@ async function refresh(){
     if(!state.ready)el('connection').textContent=state.supported?'Waiting for gateway readiness':'Connect and flash message-capable firmware';
     if(location.hostname==='localhost'||location.hostname==='127.0.0.1'){
       const operator=await api('/api/messages/operator');
-      el('operator').hidden=false;el('audit-panel').hidden=false;
+      el('operator').hidden=false;el('audit-panel').hidden=false;el('operator-nav').hidden=false;
       if(!addressInitialized){el('lan-address').value=operator.lan_host||'';addressInitialized=true;}
       el('share').textContent=operator.share_url||'Local preview only. Restart with --lan-host to share.';
       // Do not disrupt selection or manual copying during the one-second poll.

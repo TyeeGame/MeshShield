@@ -6,6 +6,8 @@ No Xenons, external wiring, buttons, sensors, Wi-Fi setup or runtime cloud forwa
 
 ## Windows startup
 
+For the new sender/partner-inbox experience, see [the send-message demo guide](docs/MESSAGE-DEMO.md). It requires the updated firmware and an explicit LAN startup option; the original demo below remains available.
+
 This checkout already has a prepared `.venv`. To recreate it on this laptop, use the bundled Python below; on another computer use `py -3.12 -m venv .venv` with Python installed.
 
 ```powershell

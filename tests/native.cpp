@@ -1,9 +1,17 @@
 #include "../shared/policy.h"
 #include "../shared/command.h"
 #include "../shared/traffic.h"
+#include "../shared/message.h"
 #include <assert.h>
 #include <stdio.h>
 int main() {
+    uint32_t messageBoot=0,messageId=0;uint8_t key[16],text[mesh::MESSAGE_MAX];size_t textSize=0;
+    assert(mesh::parseMessageKey("K,7,1,0123456789abcdef0123456789abcdef",messageBoot,messageId,key));
+    assert(mesh::parseMessage("M,7,2,0123456789abcdef0123456789abcdef,6869",messageBoot,messageId,key,text,textSize));
+    assert(messageBoot==7 && messageId==2 && textSize==2 && text[0]=='h' && text[1]=='i');
+    assert(!mesh::parseMessage("M,7,2,0123456789abcdef0123456789abcdef,6",messageBoot,messageId,key,text,textSize));
+    assert(!mesh::parseMessage("M,7,2,0123456789abcdef0123456789abcdef,",messageBoot,messageId,key,text,textSize));
+    assert(!mesh::parseMessageKey("K,7,1,short",messageBoot,messageId,key));
     uint32_t boot=0,node=0;uint8_t input[mesh::PACKET_SIZE];
     assert(mesh::parseTraffic("T,7,2,010101000000e8030000980800000000541e",boot,node,input));
     assert(boot==7 && node==2 && mesh::validate(input,sizeof input)==mesh::ALLOWED);

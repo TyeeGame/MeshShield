@@ -1,4 +1,5 @@
 import argparse
+import ipaddress
 
 def main():
     p = argparse.ArgumentParser(description='MeshShield local USB dashboard')
@@ -7,6 +8,7 @@ def main():
     mode.add_argument('--port', help='Explicit Argon port, e.g. COM7')
     p.add_argument('--list-ports', action='store_true')
     p.add_argument('--http-port', type=int, default=8000)
+    p.add_argument('--lan-host', help='Opt in to LAN message demo; your laptop IPv4 address, e.g. 192.168.1.20')
     p.add_argument('--z-threshold', type=float, default=3.0)
     a = p.parse_args()
     if a.list_ports:
@@ -18,10 +20,18 @@ def main():
         p.error('Select --simulate or --port COM_NUMBER')
     if not 1 <= a.z_threshold <= 10:
         p.error('--z-threshold must be 1–10')
+    if a.lan_host:
+        try:
+            address = ipaddress.IPv4Address(a.lan_host)
+            if address.is_unspecified or address.is_multicast or address.is_loopback:
+                raise ValueError()
+        except ValueError:
+            p.error('--lan-host must be this laptop\'s LAN IPv4 address')
     import uvicorn
     from .app import create_app
-    uvicorn.run(create_app(simulate=a.simulate, port=a.port, z=a.z_threshold),
-                host='127.0.0.1', port=a.http_port, workers=1, reload=False)
+    uvicorn.run(create_app(simulate=a.simulate, port=a.port, z=a.z_threshold, lan_host=a.lan_host),
+                host='0.0.0.0' if a.lan_host else '127.0.0.1', port=a.http_port,
+                workers=1, reload=False, proxy_headers=False)
 
 if __name__ == '__main__':
     main()

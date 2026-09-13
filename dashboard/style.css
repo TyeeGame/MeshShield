@@ -56,3 +56,7 @@ header,main{padding:22px 16px}
 h1{font-size:27px}
 }
 
+th { background: var(--surface); position: sticky; top: 0; font-weight: 600; }
+td { line-height: 1.5; vertical-align: top; }
+tbody tr:hover { background: var(--navy); }
+.table-wrap { border: 1px solid var(--border); border-radius: 8px; }

@@ -27,7 +27,7 @@ Hardware displays **ARGON HARDWARE · VIRTUAL DEVICES**. Close other serial moni
 
 ## Compile and flash one Argon
 
-Device OS **1.5.2** is retained; it is not an Argon hardware restriction. Particle cloud compilation succeeded for this target; the binary is `build/argon.bin`. Physical USB behavior remains unverified; see [current validation](docs/VALIDATION.md).
+Device OS **1.5.2** is retained; it is not an Argon hardware restriction. Particle cloud compilation succeeded for this target; the binary is `build/argon.bin`. The user completed the one-board USB demo checks described in [current validation](docs/VALIDATION.md).
 
 1. Run `.\.venv\Scripts\python.exe scripts\sync_shared.py`.
 2. Open `firmware/argon` in Particle Workbench. Use **Particle: Install Local Compiler** for 1.5.2 and **Particle: Configure Workspace for Device**, selecting Argon and 1.5.2. Leave device identity blank for USB.
@@ -46,9 +46,29 @@ Optional cloud compilation uploads firmware source to Particle and requires netw
 ```powershell
 New-Item -ItemType Directory -Force build | Out-Null
 & "$env:LOCALAPPDATA\particle\bin\particle.exe" compile argon firmware\argon --target 1.5.2 --saveTo build\argon.bin
-# Application-only flash requires compatible system parts already installed:
-& "$env:LOCALAPPDATA\particle\bin\particle.exe" flash --usb build\argon.bin
+& "$env:LOCALAPPDATA\particle\bin\particle.exe" flash --local --target 1.5.2 build\argon.bin
 ```
+
+### Windows driver and legacy system dependency checks
+
+If Windows shows **Argon DFU Mode / Code 28** while the LED blinks yellow, install **WinUSB** for that exact device using Zadig, following [Particle's Windows driver guide](https://docs.particle.io/troubleshooting/guides/build-tools-troubleshooting/win10-device-drivers/). Confirm the selected device is the Argon before installing; then retry `particle usb list`. A USB data cable is required.
+
+A successful application flash alone did not complete system setup on the tested board. It stayed blinking blue with the gateway offline. With the backend stopped and the board in listening mode, inspect dependencies:
+
+```powershell
+& "$env:LOCALAPPDATA\particle\bin\particle.exe" serial identify
+& "$env:LOCALAPPDATA\particle\bin\particle.exe" serial inspect
+```
+
+The observed system version was 1.5.2 (1512), but its dependency check failed: radio stack **202** was required and **169** was installed. Put the board into flashing-yellow DFU mode (hold MODE, tap RESET, release MODE when yellow), then run:
+
+```powershell
+& "$env:LOCALAPPDATA\particle\bin\particle.exe" update --target 1.5.2
+```
+
+Keep USB connected until completion. This update resolved the observed failure and the application started with a steady teal LED. Use the explicit target, not an unqualified update. See [Particle's update reference](https://docs.particle.io/reference/developer-tools/cli/#particle-update).
+
+For an unconfigured board running Device OS 3.x or earlier, `particle usb setup-done` sets the persistent setup flag over USB; do not use `--reset`, which clears it. This does not provision Wi-Fi. Setting that flag and stopping listening mode did **not** fix the radio-stack mismatch on the tested board; inspect dependencies if blue blinking persists. After startup, discover the serial port again and start hardware mode (COM4 was used in this test).
 
 ## Demo
 

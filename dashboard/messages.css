@@ -2,7 +2,7 @@
 body{margin:0}
 main{max-width:1160px;margin:auto;padding:48px 28px}
 header{display:flex;justify-content:space-between;align-items:center;gap:24px}
-h1{font-size:clamp(32px,5vw,54px);letter-spacing:-2px;margin:10px 0}
+h1{font-size:clamp(30px,4vw,40px);letter-spacing:-1px;margin:10px 0}
 h2{font-size:24px;margin:8px 0 20px}
 p,footer{color:var(--text);line-height:1.6}
 .eyebrow{font-size:12px;letter-spacing:2px;color:#59dcc3}

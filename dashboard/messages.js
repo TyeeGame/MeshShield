@@ -1,6 +1,19 @@
 'use strict';
 const el=id=>document.getElementById(id);
 let sending=false, readerKey='', polling=false;
+async function copyCode(inputId, label) {
+  const input=el(inputId);
+  if(!input.value){el('copy-status').textContent='Wait for the codes to load.';return;}
+  try {
+    await navigator.clipboard.writeText(input.value);
+    el('copy-status').textContent=`${label} copied. Paste it with Ctrl+V or Command+V.`;
+  } catch {
+    input.focus();input.select();
+    el('copy-status').textContent=`Automatic copying is unavailable. ${label} selected: press Ctrl+C or Command+C.`;
+  }
+}
+el('copy-sender').addEventListener('click',()=>copyCode('sender-code','Sender code'));
+el('copy-reader').addEventListener('click',()=>copyCode('reader-code','Inbox code'));
 async function api(url, options={}) {
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),7000);
@@ -40,7 +53,9 @@ async function refresh(){
       const operator=await api('/api/messages/operator');
       el('operator').hidden=false;el('audit-panel').hidden=false;
       el('share').textContent=operator.share_url||'Local preview only. Restart with --lan-host to share.';
-      el('sender-code').textContent=operator.sender_key;el('reader-code').textContent=operator.reader_key;
+      // Do not disrupt selection or manual copying during the one-second poll.
+      if(el('sender-code').value!==operator.sender_key)el('sender-code').value=operator.sender_key;
+      if(el('reader-code').value!==operator.reader_key)el('reader-code').value=operator.reader_key;
       rows(el('audit'),operator.audit,(li,item)=>{
         li.textContent=`${new Date(item.time*1000).toLocaleTimeString()} · slot ${item.slot} · ${item.status} · ${item.reason.replaceAll('_',' ')}`;
       });

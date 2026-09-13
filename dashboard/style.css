@@ -6,7 +6,7 @@ h1{font-size:32px;letter-spacing:-1px;margin:4px 0}
 .mark{color:var(--slate);padding-left:12px}
 .eyebrow{font-size:10px;letter-spacing:2px;color:var(--text);font-weight:700}
 .connection{display:flex;align-items:flex-end;flex-direction:column;gap:6px;font-size:12px}
-.connection strong{background:#f3bd52;color:#181b1e;border-radius:4px;padding:7px 12px;letter-spacing:1px}
+.connection strong{background:var(--surface);color:var(--text);border-radius:4px;padding:7px 12px;letter-spacing:1px}
 main{padding:30px 28px}
 .intro,.section-title{display:flex;justify-content:space-between;align-items:center;gap:20px}
 h2{font-size:20px;letter-spacing:-.3px;margin:8px 0}
@@ -17,10 +17,10 @@ p{font-size:14px;color:var(--text);line-height:1.6}
 .node{margin:0}
 .node h2{font-size:24px}
 .node-header{display:flex;align-items:center;justify-content:space-between}
-.status{font-size:10px;letter-spacing:1px;border:1px solid currentColor;border-radius:5px;padding:7px;color:#5be0b3}
-.status[data-state="QUARANTINED"]{color:#fa827b}
-.status[data-state="ANOMALY"],.status[data-state="CONTAINMENT PENDING"]{color:#f5c567}
-.status[data-state="OFFLINE"]{color:#9aa8b5}
+.status{font-size:10px;letter-spacing:1px;border:1px solid currentColor;border-radius:5px;padding:7px;color:var(--success)}
+.status[data-state="QUARANTINED"]{color:var(--danger)}
+.status[data-state="ANOMALY"],.status[data-state="CONTAINMENT PENDING"]{color:var(--warning)}
+.status[data-state="OFFLINE"]{color:var(--slate)}
 .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:25px 0}
 .metric small{display:block;color:var(--text);font-size:11px;margin-bottom:5px}
 .metric strong{font-size:25px;font-weight:600}
@@ -33,9 +33,9 @@ button,select{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--
 .secondary,select{background:var(--surface);color:var(--text)}
 button:disabled{opacity:.4;cursor:default}
 .switch{font-size:12px;display:flex;gap:9px;align-items:center}
-.switch input{accent-color:#59d8af;width:18px;height:18px}
+.switch input{accent-color:var(--success);width:18px;height:18px}
 .muted{color:var(--text);font-size:12px}
-#notice{color:#f5c567;min-height:22px}
+#notice{color:var(--warning);min-height:22px}
 #simulation{border-top:1px solid var(--border);margin-top:20px;padding-top:18px;font-size:12px}
 #simulation label{margin-right:12px}
 #simulation .muted{display:block;margin-top:8px}

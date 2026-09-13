@@ -38,3 +38,5 @@ a { color: var(--text); text-underline-offset: 4px; }
 .page-nav { display: flex; gap: 6px; margin: 0 0 28px; border-bottom: 1px solid var(--border); }
 .page-nav a { padding: 12px 16px; color: var(--slate); text-decoration: none; border-bottom: 2px solid transparent; font-size: 13px; font-weight: 600; }
 .page-nav a[aria-current="page"] { color: var(--text); border-bottom-color: var(--text); }
+
+:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--slate); outline-offset: 3px; }

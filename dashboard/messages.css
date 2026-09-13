@@ -17,7 +17,7 @@ textarea{resize:vertical}
 .action{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px}
 button{border:0;border-radius:7px;padding:13px 18px;background:var(--text);color:var(--navy);font-weight:700;white-space:nowrap;cursor:pointer}
 button:disabled{opacity:.4;cursor:wait}
-button:focus-visible,input:focus,textarea:focus{outline:2px solid #66e0c4;outline-offset:3px}
+button:focus-visible,input:focus,textarea:focus{outline:2px solid var(--slate);outline-offset:3px}
 #result{padding:14px;border-left:3px solid #5b7287}
 #result[data-status=blocked]{border-color:#ff8c8c;color:#ffbcbc}
 #result[data-status=delivered]{border-color:#66e0c4;color:#9ef1df}

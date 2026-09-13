@@ -25,7 +25,7 @@ function card(n, online) {
     const root=text('article','','node');
     const header=text('div','','node-header');
     const name=text('div','');
-    name.append(text('span',n.node===1?'WIRE · 0x21 · NORMAL SOURCE':'WIRE1 · 0x22 · BUTTON SOURCE','eyebrow'),text('h2',`Xenon ${n.node}`));
+    name.append(text('span',n.node===1?'WIRE · 0x21 · NORMAL SOURCE':'WIRE1 · 0x22 · BUTTON SOURCE','eyebrow'),text('h2',`Virtual device ${n.node}`));
     const badge=text('span','','status');header.append(name,badge);
     const metrics=text('div','','metrics');metrics.append(metric('RECEIVED',0),metric('ALLOWED',0),metric('BLOCKED',0));
     const rates=text('div','','rates');
@@ -49,7 +49,7 @@ function card(n, online) {
   c.observed.textContent=`Observed ${n.rate.toFixed(2)} msg/s`;
   c.learned.textContent=n.baseline?`Learned ${n.baseline.mean.toFixed(2)} · limit ${n.baseline.threshold.toFixed(2)}`:'Baseline not trained';
   const age=x=>x===null?'never':`${(x/1000).toFixed(1)}s ago`;
-  c.fresh.textContent=`Bus response: ${age(n.seen_age_ms)} · Message: ${age(n.message_age_ms)} · Quarantine: ${(n.quarantine_ms/1000).toFixed(1)}s`;
+  c.fresh.textContent=`Last input: ${age(n.seen_age_ms)} · Message: ${age(n.message_age_ms)} · Quarantine: ${(n.quarantine_ms/1000).toFixed(1)}s`;
   const interval=n.interval;
   c.diagnostics.textContent=`Last interval · transport ${interval.transport??0} · empty ${interval.empty??0} · queue overflow ${interval.queue_overflow??0}`;
   c.buttons.forEach(b=>{b.disabled=!online||!!n.pending;});
@@ -61,30 +61,34 @@ function card(n, online) {
 }
 
 function render(s) {
-  $('mode').textContent=s.mode;
+  $('mode').textContent=s.mode==='HARDWARE'?'ARGON HARDWARE � VIRTUAL DEVICES':'FULL SOFTWARE SIMULATION';
   $('gateway').textContent=s.gateway_online?`Gateway connected · session ${s.session}`:'Gateway OFFLINE · waiting for fresh summary';
   s.nodes.forEach(n=>card(n,s.gateway_online));
-  $('simulation').hidden=s.mode!=='SIMULATION';
-  if(s.simulation_mode && document.activeElement!==$('sim-mode')) $('sim-mode').value=s.simulation_mode;
+  $('simulation').hidden=false;
+  if(s.traffic_mode && document.activeElement!==$('sim-mode')) $('sim-mode').value=s.traffic_mode;
   $('auto').checked=s.auto_containment;
   const d=s.detector;
   $('training').textContent=d.training?`Clean windows: node 1 ${d.windows['1']}/12 · node 2 ${d.windows['2']}/12`:(Object.keys(d.baselines).length?'Baseline frozen · detection active':'No baseline learned');
   $('threshold').textContent=`${d.z} standard deviations above learned rate · σ floor ${d.sigma_floor} msg/s · two complete windows · rejected intervals ${d.rejected_intervals['1']} / ${d.rejected_intervals['2']}`;
-  $('finish').disabled=!d.training;$('train').disabled=d.training||!s.gateway_online;
+  $('train').disabled=d.training||!s.gateway_online;
+  $('auto').disabled=!s.gateway_online;
+  $('sim-mode').disabled=!s.gateway_online||(s.mode==='HARDWARE'&&s.ingress!=='usb_virtual');
+  if(s.mode==='HARDWARE'&&s.gateway_online&&s.ingress!=='usb_virtual') $('gateway').textContent='Wrong firmware: flash the USB-only Argon build.';
   $('diagnostics').textContent=`Bad serial lines ${s.malformed_lines} · gateway log drops ${s.log_drops}`;
-  const rows=s.incidents.map(i=>{const tr=document.createElement('tr');tr.append(text('td',new Date(i.time*1000).toLocaleTimeString()),text('td',i.node?`Xenon ${i.node}`:'Gateway'),text('td',i.reason));return tr;});
+  const rows=s.incidents.map(i=>{const tr=document.createElement('tr');tr.append(text('td',new Date(i.time*1000).toLocaleTimeString()),text('td',i.node?`Virtual device ${i.node}`:'Gateway'),text('td',i.reason));return tr;});
   $('incidents').replaceChildren(...rows);
-  $('commands').replaceChildren(...s.commands.slice(0,5).map(c=>text('div',`#${c.wire.id} · Xenon ${c.wire.node} · ${c.wire.op} · ${c.status}${c.error?' · '+c.error:''}`)));
+  $('commands').replaceChildren(...s.commands.slice(0,5).map(c=>text('div',`#${c.wire.id} · Virtual device ${c.wire.node} · ${c.wire.op} · ${c.status}${c.error?' · '+c.error:''}`)));
 }
 let fetching=false;
 async function refresh(){
   if(fetching)return;fetching=true;
-  try{const r=await fetch('/api/state');if(!r.ok)throw new Error('Backend unavailable');render(await r.json());}
-  catch(e){$('gateway').textContent='Backend OFFLINE';$('notice').textContent=e.message;document.querySelectorAll('#nodes button').forEach(b=>b.disabled=true);document.querySelectorAll('.status').forEach(b=>{b.textContent='OFFLINE';b.dataset.state='OFFLINE';});}
-  finally{fetching=false;}
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),2500);
+  try{const r=await fetch('/api/state',{signal:controller.signal});if(!r.ok)throw new Error('Backend unavailable');render(await r.json());}
+  catch(e){$('gateway').textContent='Backend OFFLINE';$('notice').textContent=e.name==='AbortError'?'Backend response timed out; reconnecting.':e.message;['train','auto','sim-mode'].forEach(id=>$(id).disabled=true);document.querySelectorAll('#nodes button').forEach(b=>b.disabled=true);document.querySelectorAll('.status').forEach(b=>{b.textContent='OFFLINE';b.dataset.state='OFFLINE';});}
+  finally{clearTimeout(timeout);fetching=false;}
 }
 $('train').onclick=()=>act('/api/training/start');
-$('finish').onclick=()=>act('/api/training/finish');
 $('auto').onchange=()=>act('/api/auto',{enabled:$('auto').checked});
-$('sim-mode').onchange=()=>act('/api/simulation/mode',{mode:$('sim-mode').value});
+$('sim-mode').onchange=()=>act('/api/traffic/mode',{mode:$('sim-mode').value});
 refresh();setInterval(refresh,500);

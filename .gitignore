@@ -4,3 +4,9 @@ __pycache__/
 build/
 *.bin
 .DS_Store
+meshshield-argon-only.patch
+MeshShield-*.zip
+firmware/**/target/
+*.log
+.env
+.env.*

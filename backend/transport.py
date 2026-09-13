@@ -3,12 +3,13 @@ import json
 import logging
 import time
 from .events import Framer, parse_event
+from .traffic import Traffic
 LOG = logging.getLogger(__name__)
 
 class SerialTransport:
     def __init__(self, port):
         import serial
-        self.serial = serial.Serial(port, 115200, timeout=.05, write_timeout=.2)
+        self.serial = serial.Serial(port, 115200, timeout=.005, write_timeout=.2)
 
     def read(self):
         return self.serial.read(min(max(self.serial.in_waiting, 1), 2048))
@@ -27,6 +28,7 @@ class Bridge:
         self.factory = factory
         self.transport = None
         self.running = True
+        self.traffic = Traffic()
         self.framer = Framer()
 
     async def run(self):
@@ -57,6 +59,11 @@ class Bridge:
                         await asyncio.to_thread(self.transport.write, payload)
                         p['attempts'] += 1
                         p['sent_at'] = now
+                # Commands have priority. Only a verified USB-virtual firmware gets traffic.
+                if self.state.mode == 'HARDWARE' and self.state.online() and self.state.ingress == 'usb_virtual':
+                    for payload in self.traffic.due(self.state.clock(), self.state.session):
+                        await asyncio.to_thread(self.transport.write, payload)
+
             except (OSError, IOError) as exc:
                 self.state.disconnect(str(exc))
                 if self.transport:

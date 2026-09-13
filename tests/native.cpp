@@ -1,8 +1,15 @@
 #include "../shared/policy.h"
 #include "../shared/command.h"
+#include "../shared/traffic.h"
 #include <assert.h>
 #include <stdio.h>
 int main() {
+    uint32_t boot=0,node=0;uint8_t input[mesh::PACKET_SIZE];
+    assert(mesh::parseTraffic("T,7,2,010101000000e8030000980800000000541e",boot,node,input));
+    assert(boot==7 && node==2 && mesh::validate(input,sizeof input)==mesh::ALLOWED);
+    assert(!mesh::parseTraffic("T,7,3,010101000000e8030000980800000000541e",boot,node,input));
+    assert(!mesh::parseTraffic("T,7,2,00",boot,node,input));
+    assert(!mesh::parseTraffic("T,7,2,zz0101000000e8030000980800000000541e",boot,node,input));
     assert(mesh::crc16((const uint8_t*)"123456789",9)==0x29b1);
     uint8_t p[mesh::PACKET_SIZE];mesh::encode(p,1,1,1000,2200,0);
     const uint8_t expected[]={1,1,1,0,0,0,0xe8,3,0,0,0x98,8,0,0,0,0,0x54,0x1e};

@@ -172,6 +172,24 @@ class StateTests(unittest.TestCase):
         self.assertEqual(v['nodes'][0]['state'],'HEALTHY')
         self.assertEqual(v['nodes'][1]['state'],'OFFLINE')
 
+    def test_gateway_restart_does_not_mix_training_sessions(self):
+        self.s.detector.start()
+        self.advance(12)
+        self.assertGreater(len(self.s.detector.samples[1]), 0)
+        self.g.session += 1
+        self.advance(1.1)
+        self.assertTrue(self.s.detector.training)
+        self.assertEqual(self.s.detector.samples, {1: [], 2: []})
+
+    def test_frozen_baseline_survives_gateway_restart(self):
+        self.s.detector.start()
+        self.advance(65)
+        baseline = dict(self.s.detector.baselines)
+        self.g.session += 1
+        self.advance(1.1)
+        self.assertEqual(self.s.detector.baselines, baseline)
+        self.assertEqual(self.s.detector.streak, {1: 0, 2: 0})
+
     def test_full_learned_containment_flow(self):
         self.s.detector.start();self.s.gap=True
         self.advance(65)

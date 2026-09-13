@@ -5,6 +5,7 @@ from .detector import Detector
 class State:
     def __init__(self, mode, clock=time.monotonic, z=3):
         self.mode = mode
+        self.ingress = None
         self.clock = clock
         self.session = None
         self.seq = 0
@@ -32,6 +33,8 @@ class State:
 
     def disconnect(self, error='Gateway disconnected'):
         self.connected = False
+        self.last_summary = None
+        self.ingress = None
         self.error = error
         self.gap = True
         self.detector.reset()
@@ -74,6 +77,7 @@ class State:
         if e['session'] != self.session:
             if e['type'] != 'summary':
                 return  # synchronize from a complete gateway state
+            restarted = self.session is not None
             self.disconnect('Gateway session changed')
             self.session = e['session']
             self.seq = 0
@@ -82,6 +86,9 @@ class State:
             self.q_until = {1: 0, 2: 0}
             self.totals = {n: dict(received=0, allowed=0, blocked=0) for n in (1, 2)}
             self.detector.reset()
+            if restarted and self.detector.training:
+                self.detector.start()
+                self.incident(None, 'Gateway restarted; clean baseline collection restarted')
         if e['seq'] <= self.seq:
             return
         if e['seq'] != self.seq + 1 or (self.last_event is not None and now - self.last_event > 3):
@@ -94,6 +101,7 @@ class State:
         kind = e['type']
         if kind == 'summary':
             self.last_summary = now
+            self.ingress = e.get('ingress')
             self.last_id = max(self.last_id, e['last_command_id'])
             self.log_drops = e['log_drops']
             for row in e['nodes']:
@@ -161,6 +169,6 @@ class State:
                                baseline=self.detector.baselines.get(n), alert=self.detector.alerts.get(n),
                                history=list(self.history[n]), pending=pending,
                                interval={k: v for k, v in row.items() if k != 'at'}))
-        return dict(mode=self.mode, gateway_online=online, session=self.session, error=self.error,
+        return dict(mode=self.mode, ingress=self.ingress, gateway_online=online, session=self.session, error=self.error,
                     malformed_lines=self.malformed, log_drops=self.log_drops, auto_containment=self.auto,
                     detector=self.detector.view(), nodes=result, incidents=list(self.incidents), commands=list(self.commands))

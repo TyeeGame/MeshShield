@@ -3,6 +3,7 @@
 #include "protocol.h"
 #include "policy.h"
 #include "command.h"
+#include "traffic.h"
 #include <stdarg.h>
 SYSTEM_MODE(MANUAL);
 namespace {
@@ -11,7 +12,7 @@ char tx[TX_SLOTS][LINE]; uint16_t lengths[TX_SLOTS]; unsigned txHead=0,txTail=0,
 uint32_t session=0,eventSeq=0,logDrops=0,lastCommand=0,lastSummary=0;
 struct Node {
     mesh::Policy policy;
-    uint32_t nextPoll=0,lastSeen=0,lastMessage=0,endpointUptime=0,overflowTotal=0,overflowDelta=0;
+    uint32_t lastSeen=0,lastMessage=0,overflowDelta=0;
     uint32_t counts[mesh::REASON_COUNT]={0};
     uint32_t received=0,allowed=0,blocked=0,lastSample=0;
     bool seen=false,messageSeen=false,quarantineSeen=false;
@@ -41,7 +42,14 @@ void ack(const mesh::Command& c,const char* status,bool duplicate,uint32_t now) 
     emit("ack","\"id\":%lu,\"node\":%lu,\"status\":\"%s\",\"duplicate\":%s,\"quarantine_ms\":%lu,\"last_command_id\":%lu",
          (unsigned long)c.id,(unsigned long)c.node,status,duplicate?"true":"false",(unsigned long)nodes[i].policy.remaining(now),(unsigned long)lastCommand);
 }
+void acceptTraffic(unsigned i,const uint8_t* data,size_t read,uint32_t after);
 void command(const char* line,uint32_t now) {
+    if(!strncmp(line,"T,",2)) {
+        uint32_t boot=0,node=0; uint8_t data[mesh::PACKET_SIZE];
+        if(mesh::parseTraffic(line,boot,node,data) && boot==session) acceptTraffic(node-1,data,sizeof data,now);
+        else emit("error","\"reason\":\"malformed_command\"");
+        return;
+    }
     mesh::Command c;
     if(!mesh::parseCommand(line,c)) { emit("error","\"reason\":\"malformed_command\"");return; }
     if(c.session!=session) { ack(c,"wrong_session",false,now); return; }
@@ -74,25 +82,10 @@ void pumpRx(uint32_t now) {
         else dropping=true;
     }
 }
-void poll(unsigned i,uint32_t now) {
-    Node& n=nodes[i]; n.policy.expire(now);
-    if(n.policy.remaining(now)) n.quarantineSeen=true;
-    if(int32_t(now-n.nextPoll)<0) return;
-    n.nextPoll=now+20;
-    TwoWire& bus=i==0?Wire:Wire1;
-    uint8_t data[mesh::PACKET_SIZE];
-    size_t got=bus.requestFrom(WireTransmission(0x21+i).quantity(mesh::PACKET_SIZE).timeout(uint32_t(5)));
-    uint32_t after=millis();
-    if(!got) { ++n.counts[mesh::TRANSPORT];n.nextPoll=after+250;return; }
-    size_t read=0;while(bus.available() && read<sizeof(data)) data[read++]=bus.read();
+void acceptTraffic(unsigned i,const uint8_t* data,size_t read,uint32_t after) {
+    Node& n=nodes[i];
+    n.policy.expire(after);
     n.lastSeen=after;n.seen=true;
-    mesh::Reason valid=mesh::validate(data,read);
-    if(valid==mesh::ALLOWED || valid==mesh::IS_EMPTY || valid==mesh::UNKNOWN_TYPE) {
-        uint32_t up=mesh::get32(data+6),drops=mesh::get32(data+12);
-        if(up<n.endpointUptime) {n.overflowTotal=0;n.quarantineSeen=true;} // reboot invalidates detector interval
-        if(drops>=n.overflowTotal) n.overflowDelta+=drops-n.overflowTotal;
-        n.endpointUptime=up;n.overflowTotal=drops;
-    }
     mesh::Reason r=n.policy.evaluate(data,read,after); ++n.counts[r];
     if(r==mesh::IS_EMPTY) return;
     ++n.received;n.lastMessage=after;n.messageSeen=true;
@@ -111,7 +104,7 @@ void poll(unsigned i,uint32_t now) {
 }
 void summary(uint32_t now) {
     char body[1250];size_t pos=0;
-    pos+=snprintf(body+pos,sizeof(body)-pos,"\"duration_ms\":%lu,\"uptime_ms\":%lu,\"log_drops\":%lu,\"last_command_id\":%lu,\"nodes\":[",(unsigned long)uint32_t(now-lastSummary),(unsigned long)now,(unsigned long)logDrops,(unsigned long)lastCommand);
+    pos+=snprintf(body+pos,sizeof(body)-pos,"\"ingress\":\"usb_virtual\",\"duration_ms\":%lu,\"uptime_ms\":%lu,\"log_drops\":%lu,\"last_command_id\":%lu,\"nodes\":[",(unsigned long)uint32_t(now-lastSummary),(unsigned long)now,(unsigned long)logDrops,(unsigned long)lastCommand);
     for(unsigned i=0;i<2;i++) {
         Node& n=nodes[i];n.policy.expire(now);
         pos+=snprintf(body+pos,sizeof(body)-pos,"%s{\"node\":%u,\"received\":%lu,\"allowed\":%lu,\"blocked\":%lu,\"transport\":%lu,\"empty\":%lu,\"queue_overflow\":%lu,\"quarantine_ms\":%lu,\"contaminated\":%s,\"seen_age_ms\":%ld,\"message_age_ms\":%ld,\"reasons\":{",i?",":"",i+1,(unsigned long)n.received,(unsigned long)n.allowed,(unsigned long)n.blocked,(unsigned long)n.counts[mesh::TRANSPORT],(unsigned long)n.counts[mesh::IS_EMPTY],(unsigned long)n.overflowDelta,(unsigned long)n.policy.remaining(now),n.quarantineSeen?"true":"false",n.seen?(long)uint32_t(now-n.lastSeen):-1L,n.messageSeen?(long)uint32_t(now-n.lastMessage):-1L);
@@ -126,12 +119,14 @@ void setup() {
     Serial.begin(115200);Serial.blockOnOverrun(false);
     RGB.control(true);RGB.brightness(40);RGB.color(0x008080);
     session=HAL_RNG_GetRandomNumber();if(!session) session=1;lastSummary=millis();
-    Wire.begin();Wire1.begin();Wire.setSpeed(100000);Wire1.setSpeed(100000);
+    // USB-only gateway: no external wiring or network provisioning.
 }
 void loop() {
     uint32_t now=millis();pumpRx(now);
-    // Refresh time between nodes: error recovery can consume ~57 ms.
-    poll(0,millis());poll(1,millis());
+    for(auto& n:nodes) {
+        if(n.policy.remaining(now)) n.quarantineSeen=true;
+        n.policy.expire(now);
+    }
     now=millis();if(uint32_t(now-lastSummary)>=1000) summary(now);
     RGB.color(nodes[0].policy.remaining(now)||nodes[1].policy.remaining(now)?0xd03020:0x008080);
     pumpTx();

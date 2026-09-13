@@ -1,20 +1,16 @@
-# Validation record — 2026-09-12
+# Validation in this checkout
 
-## Executed successfully
+Executed September 12, 2026 (local time), on branch `argon-only-migration`.
 
-- **18 Python unittest cases** with runtime and HTTP test dependencies installed. Includes actual FastAPI lifespan/HTTP requests through TestClient, serialized bridge retries and disconnect/reconnect using an injected transport, simulated flood isolation, rate/quarantine rules, command idempotency, detector training/held-out normal/anomaly cases, partial-window rejection, node/gateway freshness, and pending/acknowledged UI state.
-- Portable C++ protocol/policy/command parser compiled with host Clang using C++11, `-Wall -Wextra -pedantic`; ran successfully. Also passed **UndefinedBehaviorSanitizer**. Verified CRC known-answer packet, wraparound, refill/expiry, rolling violations, and malformed command inputs. This is not a Particle build.
-- `node --check dashboard/app.js` passed (syntax check only; Node is not a runtime requirement).
-- `python3 -m compileall -q backend simulator scripts tests` passed.
-- `scripts/sync_shared.py --check` and `git diff --check` passed.
-- Live localhost Uvicorn simulator and browser: both nodes healthy; real-time clean baseline completed; node 2 at 4.00 msg/s exceeded the learned 1.75 msg/s threshold with zero fixed-policy blocks before containment; node 1 stayed healthy. Enabling automatic containment produced acknowledged quarantine on node 2. Manual quarantine and release controls exercised after fixing status refreshes to preserve stable button elements.
-- Dashboard visually inspected in a narrow app viewport. Mode badge, node metrics, learned state, traffic graphs, quarantine countdown, and incident/command status rendered correctly. No hardware control was substituted for a physical button.
+- 26 Python unittest tests passed, with no skips, using the project's Python 3.12 virtual environment. Coverage includes traffic modes, handshake gating, reconnect handshake invalidation, independent devices, quarantine expiry without extension, duplicate commands, learned containment, baseline restart and HTTP behavior.
+- Node dashboard stalled-request/offline and retry regression passed.
+- Shared-header synchronization check and packaging unittest passed.
+- `git diff --check` passed.
+- Particle CLI 3.50.1 is installed at `%LOCALAPPDATA%\particle\bin\particle.exe`; Workbench extension 1.16.50 is installed, but no local toolchains directory/compiler was found.
+- Particle USB discovery reported `No devices found`; backend port discovery returned no ports. No board was flashed or physically tested.
+- After explicit user authorization, Particle cloud compilation succeeded for Argon Device OS 1.5.2. Output: `build/argon.bin`; reported application usage: 9,752 bytes flash and 11,360 bytes RAM. The binary is ignored by Git.
+- Portable native C++ tests were not run: no host C++ compiler was found on PATH. Python policy tests do not replace those tests or a Particle build.
 
-## Not validated / environment limits
+Still required: flash matching system/application firmware and test USB traffic, measured modes, isolation, expiry, learned containment and disconnect/reconnect on a real Argon. Firmware compilation is verified; physical operation is not.
 
-- **No Particle CLI or ARM Device OS toolchain was installed**, so the Argon and Xenon Particle projects have **not been compiled**, linked, or flashed. Compatibility was checked against official Particle docs and v1.5.2 sources; this is not equivalent to compilation.
-- **No physical boards/wiring were tested.** I²C callback behavior, bus recovery under electrical faults, USB backpressure on actual boards, RGB, button debounce, and standalone device/system-part provisioning require a bench check.
-- PowerShell/Windows driver/COM-port/Workbench setup was documented but not executed. Software tests ran on macOS with Python 3.9; the README recommends Python 3.11/3.12 for installation.
-- AddressSanitizer could not initialize in this macOS environment (`sanitizer_malloc_mac.inc:189` assertion), including outside the sandbox. No AddressSanitizer pass is claimed; ordinary native and UndefinedBehaviorSanitizer runs passed.
-
-Simulation, HTTP tests, and host C++ tests must not be reported as hardware tests. The concrete next hardware gates are the two pinned Particle builds (Xenon compiled for each node setting), DFU/system-part installation, healthy two-node polling, and unplug/stuck-bus/USB-backpressure bench tests.
+Migration used only the compatibility-checked patch, against commit `77aeaf20189d97b7fa2bd0fdc67087d7e636bacb`. The ZIP inventory was inspected but not extracted. Original project and Git history were preserved; changes remain uncommitted. Patch, ZIP, virtual environment and build output are ignored.

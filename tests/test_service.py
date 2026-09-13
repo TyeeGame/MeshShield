@@ -52,11 +52,83 @@ class ApiTests(unittest.TestCase):
         app=create_app(simulate=False,port='UNUSED')
         # No lifespan means no hardware is opened in this API-only test.
         client=TestClient(app)
-        self.assertEqual(client.post('/api/simulation/mode',json={'mode':'FLOOD'}).status_code,404)
+        self.assertEqual(client.post('/api/simulation/mode',json={'mode':'FLOOD'}).status_code,409)
         self.assertEqual(client.get('/api/state').json()['mode'],'HARDWARE')
         self.assertEqual(client.post('/api/command',json={'node':1,'op':'quarantine'}).status_code,409)
 
+    def test_hardware_mode_selector_controls_host_source(self):
+        app=create_app(simulate=False,port='UNUSED')
+        app.state.bridge.transport=object()  # No actual port is opened.
+        gateway=Gateway()
+        for _ in range(50):
+            for event in gateway.step():
+                if event['type']=='summary':event['ingress']='usb_virtual'
+                app.state.mesh.accept(event)
+        client=TestClient(app)  # No lifespan: the hardware transport stays unopened.
+        response=client.post('/api/traffic/mode',json={'mode':'ANOMALY'})
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(app.state.bridge.traffic.mode,'ANOMALY')
+        self.assertEqual(client.get('/api/state').json()['traffic_mode'],'ANOMALY')
+        self.assertEqual(client.post('/api/training/start').status_code,409)
+
 class BridgeTests(unittest.IsolatedAsyncioTestCase):
+    def test_reconnect_requires_new_summary(self):
+        state = State('HARDWARE')
+        gateway = Gateway()
+        for _ in range(50):
+            for event in gateway.step():
+                if event['type'] == 'summary':
+                    event['ingress'] = 'usb_virtual'
+                state.accept(event)
+        self.assertTrue(state.online())
+        state.disconnect()
+        state.accept(dict(session=state.session, seq=state.seq + 1,
+                          type='telemetry', node=1))
+        self.assertFalse(state.online())
+        self.assertIsNone(state.ingress)
+        for _ in range(100):
+            for event in gateway.step():
+                if event['type'] == 'summary':
+                    event['ingress'] = 'usb_virtual'
+                state.accept(event)
+        self.assertTrue(state.online())
+        self.assertEqual(state.ingress, 'usb_virtual')
+
+    async def test_hardware_generates_traffic_only_after_firmware_handshake(self):
+        g=Gateway()
+        class Fake:
+            def __init__(self):self.new_firmware=False;self.writes=[]
+            def read(self):
+                time.sleep(.005)
+                events=g.step(.02)
+                for e in events:
+                    if e['type']=='summary' and self.new_firmware:e['ingress']='usb_virtual'
+                return b''.join(json.dumps(e).encode()+b'\n' for e in events)
+            def write(self,data):self.writes.append(data)
+            def close(self):pass
+        device=Fake();state=State('HARDWARE');bridge=Bridge(state,lambda:device)
+        task=asyncio.create_task(bridge.run())
+        try:
+            deadline=time.monotonic()+3
+            while not state.online() and time.monotonic()<deadline:await asyncio.sleep(.01)
+            self.assertTrue(state.online())
+            self.assertEqual(device.writes,[])
+            device.new_firmware=True
+            bridge.traffic.set_mode('UNKNOWN_TYPE')
+            deadline=time.monotonic()+3
+            while len(device.writes)<2 and time.monotonic()<deadline:await asyncio.sleep(.01)
+            self.assertGreaterEqual(len(device.writes),2)
+            from backend.protocol import validate
+            packets={}
+            for line in device.writes:
+                prefix,session,node,data=line.decode().strip().split(',')
+                self.assertEqual(prefix,'T')
+                self.assertEqual(int(session),g.session)
+                packets[int(node)]=validate(bytes.fromhex(data))
+            self.assertEqual(packets,{1:'allowed',2:'unknown_type'})
+        finally:
+            await bridge.stop();await task
+
     async def test_malformed_disconnect_reconnect_and_retry_same_id(self):
         g=Gateway()
         initial=[e for _ in range(50) for e in g.step()]

@@ -15,6 +15,9 @@ class Gateway:
         self.last_id = 0
         self.cache = {}
         self.policies = {n: Policy() for n in (1, 2)}
+        self.message_policies = {n: Policy() for n in (1, 2)}
+        self.message_key = None
+        self.last_message_id = 0
         self.modes = {1: 'NORMAL', 2: 'NORMAL'}
         self.connected = {1: True, 2: True}
         self.next_send = {1: 0.5, 2: 0.7}
@@ -66,6 +69,33 @@ class Gateway:
                           quarantine_ms=self.policies[n].remaining(self.now) if n in (1, 2) else 0,
                           last_command_id=self.last_id)
 
+    def message(self, line):
+        try:
+            parts = line.decode('ascii').strip().split(',')
+            if parts[0] not in ('K', 'M') or int(parts[1]) != self.session:
+                raise ValueError()
+            mid = int(parts[2])
+            if not 1 <= mid <= 0xffffffff or len(parts[3]) != 32:
+                raise ValueError()
+            key = bytes.fromhex(parts[3])
+            if parts[0] == 'K' and len(parts) == 4:
+                self.message_key = key
+                self.last_message_id = 0
+                return self.event('message_ready', id=mid)
+            if len(parts) != 5 or not 1 <= len(bytes.fromhex(parts[4])) <= 160 or self.message_key is None:
+                raise ValueError()
+            if mid <= self.last_message_id:
+                return None
+            self.last_message_id = mid
+            n = 1 if key == self.message_key else 2
+            policy = self.message_policies[n]
+            reason = policy.evaluate(packet(kind=1 if n == 1 else 127), self.now)
+            return self.event('message_decision', id=mid, slot=n,
+                              reason='unauthorized' if reason == 'unknown_type' else reason,
+                              quarantine_ms=policy.remaining(self.now))
+        except (ValueError, IndexError, UnicodeError):
+            return self.event('error', reason='malformed_command')
+
     def step(self, dt=0.02):
         self.now = round(self.now + dt, 8)
         events = []
@@ -112,7 +142,7 @@ class Gateway:
                 row['message_age_ms'] = -1 if self.last_message[n] is None else round((self.now-self.last_message[n])*1000)
                 rows.append(row)
                 self.rows[n] = self.fresh(n)
-            events.append(self.event('summary', duration_ms=round((self.now-self.last_summary)*1000), uptime_ms=round(self.now*1000), log_drops=0, last_command_id=self.last_id, nodes=rows))
+            events.append(self.event('summary', messages=1, duration_ms=round((self.now-self.last_summary)*1000), uptime_ms=round(self.now*1000), log_drops=0, last_command_id=self.last_id, nodes=rows))
             self.last_summary = self.now
         return events
 
@@ -135,7 +165,9 @@ class SimTransport:
 
     def write(self, data):
         for line in self.framer.feed(data):
-            self.out.append(json.dumps(self.gateway.command(json.loads(line))).encode() + b'\n')
+            event = self.gateway.message(line) if line.startswith((b'K,', b'M,')) else self.gateway.command(json.loads(line))
+            if event:
+                self.out.append(json.dumps(event).encode() + b'\n')
 
     def close(self):
         pass

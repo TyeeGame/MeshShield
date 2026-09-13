@@ -1,5 +1,11 @@
 # Validation in this checkout
 
+## Message-demo extension (branch `codex/message-demo`)
+
+Software validation: the full suite passed with 33 tests after adding the relay; the additional message-policy test then passed with the other seven message tests (34 tests total across the suite). Coverage includes LAN isolation of operator endpoints even with spoofed Host/forwarded headers, bounded requests and queues, code-protected inbox, unauthorized rejection, allowed delivery, session/ID correlation, duplicate suppression, timeout/late-response rejection, disconnect invalidation, separate slot policies and quarantine expiry. The existing dashboard timeout/retry regression and shared-header check passed. JavaScript syntax and Git whitespace checks passed.
+
+An actual browser using the software simulator displayed unauthorized rejection with a blank code and approved delivery into the inbox with the sender/inbox codes. This is browser/software verification, not hardware validation. After explicit user authorization, Particle cloud compilation succeeded for the message-demo firmware targeting Argon Device OS 1.5.2. Output: `build/argon-messages.bin`; reported usage: 10,664 bytes flash and 11,608 bytes RAM. This new binary has not yet been flashed or physically tested. Native C++ parser checks were extended but have not been executed without a host compiler. The two-laptop LAN flow and physical message decisions remain to be tested. The original hardware results below do not validate this extension.
+
 Executed September 12, 2026 (local time), on branch `argon-only-migration`.
 
 - 26 Python unittest tests passed, with no skips, using the project's Python 3.12 virtual environment. Coverage includes traffic modes, handshake gating, reconnect handshake invalidation, independent devices, quarantine expiry without extension, duplicate commands, learned containment, baseline restart and HTTP behavior.

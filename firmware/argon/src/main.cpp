@@ -4,6 +4,7 @@
 #include "policy.h"
 #include "command.h"
 #include "traffic.h"
+#include "message.h"
 #include <stdarg.h>
 SYSTEM_MODE(MANUAL);
 namespace {
@@ -19,6 +20,9 @@ struct Node {
 } nodes[2];
 struct Ack { uint32_t id=0; unsigned node=0; char op[16]={0}; uint32_t duration=0; } cache[16];
 unsigned cacheNext=0;
+uint8_t messageKey[16]={0}; bool messageConfigured=false;
+uint32_t lastMessageId=0;
+mesh::Policy messagePolicies[2];
 void emit(const char* type,const char* format,...) {
     uint32_t seq=++eventSeq;
     if(txCount==TX_SLOTS || !Serial.isConnected()) { ++logDrops; return; }
@@ -44,6 +48,31 @@ void ack(const mesh::Command& c,const char* status,bool duplicate,uint32_t now) 
 }
 void acceptTraffic(unsigned i,const uint8_t* data,size_t read,uint32_t after);
 void command(const char* line,uint32_t now) {
+    if(!strncmp(line,"K,",2)) {
+        uint32_t boot=0,id=0;uint8_t key[16];
+        if(mesh::parseMessageKey(line,boot,id,key) && boot==session) {
+            memcpy(messageKey,key,sizeof messageKey);messageConfigured=true;
+            lastMessageId=0;
+            emit("message_ready","\"id\":%lu",(unsigned long)id);
+        } else emit("error","\"reason\":\"malformed_command\"");
+        return;
+    }
+    if(!strncmp(line,"M,",2)) {
+        uint32_t boot=0,id=0;uint8_t key[16],body[mesh::MESSAGE_MAX];size_t size=0;
+        if(!mesh::parseMessage(line,boot,id,key,body,size) || boot!=session || !messageConfigured) {
+            emit("error","\"reason\":\"malformed_command\"");return;
+        }
+        if(id<=lastMessageId) return;
+        lastMessageId=id;
+        uint8_t difference=0;for(unsigned i=0;i<16;i++) difference|=key[i]^messageKey[i];
+        unsigned slot=difference?1:0;
+        uint8_t packet[mesh::PACKET_SIZE];mesh::encode(packet,difference?127:1,id,now,0,0);
+        mesh::Reason result=messagePolicies[slot].evaluate(packet,sizeof packet,now);
+        const char* reason=result==mesh::UNKNOWN_TYPE?"unauthorized":mesh::reasonName(result);
+        emit("message_decision","\"id\":%lu,\"slot\":%u,\"reason\":\"%s\",\"quarantine_ms\":%lu",
+             (unsigned long)id,slot+1,reason,(unsigned long)messagePolicies[slot].remaining(now));
+        return;
+    }
     if(!strncmp(line,"T,",2)) {
         uint32_t boot=0,node=0; uint8_t data[mesh::PACKET_SIZE];
         if(mesh::parseTraffic(line,boot,node,data) && boot==session) acceptTraffic(node-1,data,sizeof data,now);
@@ -73,7 +102,7 @@ void command(const char* line,uint32_t now) {
     ack(c,"ok",false,now); // action precedes acknowledgement
 }
 void pumpRx(uint32_t now) {
-    static char line[256];static size_t used=0;static bool dropping=false;
+    static char line[416];static size_t used=0;static bool dropping=false;
     unsigned budget=128;
     while(budget-- && Serial.available()) {
         char c=Serial.read();
@@ -104,7 +133,7 @@ void acceptTraffic(unsigned i,const uint8_t* data,size_t read,uint32_t after) {
 }
 void summary(uint32_t now) {
     char body[1250];size_t pos=0;
-    pos+=snprintf(body+pos,sizeof(body)-pos,"\"ingress\":\"usb_virtual\",\"duration_ms\":%lu,\"uptime_ms\":%lu,\"log_drops\":%lu,\"last_command_id\":%lu,\"nodes\":[",(unsigned long)uint32_t(now-lastSummary),(unsigned long)now,(unsigned long)logDrops,(unsigned long)lastCommand);
+    pos+=snprintf(body+pos,sizeof(body)-pos,"\"ingress\":\"usb_virtual\",\"messages\":1,\"duration_ms\":%lu,\"uptime_ms\":%lu,\"log_drops\":%lu,\"last_command_id\":%lu,\"nodes\":[",(unsigned long)uint32_t(now-lastSummary),(unsigned long)now,(unsigned long)logDrops,(unsigned long)lastCommand);
     for(unsigned i=0;i<2;i++) {
         Node& n=nodes[i];n.policy.expire(now);
         pos+=snprintf(body+pos,sizeof(body)-pos,"%s{\"node\":%u,\"received\":%lu,\"allowed\":%lu,\"blocked\":%lu,\"transport\":%lu,\"empty\":%lu,\"queue_overflow\":%lu,\"quarantine_ms\":%lu,\"contaminated\":%s,\"seen_age_ms\":%ld,\"message_age_ms\":%ld,\"reasons\":{",i?",":"",i+1,(unsigned long)n.received,(unsigned long)n.allowed,(unsigned long)n.blocked,(unsigned long)n.counts[mesh::TRANSPORT],(unsigned long)n.counts[mesh::IS_EMPTY],(unsigned long)n.overflowDelta,(unsigned long)n.policy.remaining(now),n.quarantineSeen?"true":"false",n.seen?(long)uint32_t(now-n.lastSeen):-1L,n.messageSeen?(long)uint32_t(now-n.lastMessage):-1L);
@@ -128,6 +157,7 @@ void loop() {
         n.policy.expire(now);
     }
     now=millis();if(uint32_t(now-lastSummary)>=1000) summary(now);
-    RGB.color(nodes[0].policy.remaining(now)||nodes[1].policy.remaining(now)?0xd03020:0x008080);
+    RGB.color(nodes[0].policy.remaining(now)||nodes[1].policy.remaining(now)||
+              messagePolicies[0].remaining(now)||messagePolicies[1].remaining(now)?0xd03020:0x008080);
     pumpTx();
 }

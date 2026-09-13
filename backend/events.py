@@ -62,6 +62,14 @@ def parse_event(line):
             reasons = r.get('reasons')
             if not isinstance(reasons, dict) or set(reasons) != set(REASONS) or any(not integer(v) for v in reasons.values()) or sum(reasons.values()) != r['blocked']:
                 raise ValueError('invalid reasons')
+    elif kind == 'message_ready':
+        if not integer(e.get('id'), 1):
+            raise ValueError('invalid message readiness')
+    elif kind == 'message_decision':
+        if (not integer(e.get('id'), 1) or not integer(e.get('slot'), 1, 2) or
+                e.get('reason') not in ('allowed', 'unauthorized', 'rate_limit', 'quarantine') or
+                not integer(e.get('quarantine_ms'), 0, 60000)):
+            raise ValueError('invalid message decision')
     elif kind == 'ack':
         if not integer(e.get('id'), 1) or not integer(e.get('node'), 1, 2) or not integer(e.get('quarantine_ms'), 0, 60000) or not integer(e.get('last_command_id')) or type(e.get('duplicate')) is not bool:
             raise ValueError('invalid acknowledgment')

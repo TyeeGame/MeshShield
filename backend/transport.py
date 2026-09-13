@@ -30,6 +30,7 @@ class Bridge:
         self.running = True
         self.traffic = Traffic()
         self.framer = Framer()
+        self.messages = None
 
     async def run(self):
         while self.running:
@@ -45,12 +46,20 @@ class Bridge:
                     self.framer.errors = 0
                 for line in lines:
                     try:
-                        self.state.accept(parse_event(line))
+                        event = parse_event(line)
+                        previous = (self.state.session, self.state.seq)
+                        self.state.accept(event)
+                        if self.messages and (self.state.session, self.state.seq) != previous:
+                            self.messages.observe(event)
                     except (ValueError, TypeError, KeyError) as exc:
                         self.state.malformed += 1
                         self.state.gap = True
                         LOG.debug('Rejected serial event: %s', exc)
                 self.state.tick()
+                if self.messages:
+                    payload = self.messages.due()
+                    if payload:
+                        await asyncio.to_thread(self.transport.write, payload)
                 # Iteration snapshot: acknowledgments are handled on the next read.
                 for p in list(self.state.pending.values()):
                     now = self.state.clock()
@@ -66,6 +75,8 @@ class Bridge:
 
             except (OSError, IOError) as exc:
                 self.state.disconnect(str(exc))
+                if self.messages:
+                    self.messages.disconnect()
                 if self.transport:
                     self.transport.close()
                     self.transport = None

@@ -11,6 +11,18 @@ from simulator.gateway import Gateway
 
 
 class MessageApiTests(unittest.TestCase):
+    def test_lan_can_load_theme_and_font_without_operator_access(self):
+        remote = TestClient(create_app(lan_host='192.168.1.20'),
+                            client=('192.168.1.30', 12345), base_url='http://192.168.1.20')
+        theme = remote.get('/static/theme.css')
+        self.assertEqual(theme.status_code, 200)
+        self.assertIn('text/css', theme.headers['content-type'])
+        font = remote.get('/static/fonts/InterVariable.woff2')
+        self.assertEqual(font.status_code, 200)
+        self.assertEqual(font.content[:4], b'wOF2')
+        self.assertEqual(remote.get('/api/messages/operator').status_code, 403)
+        self.assertEqual(remote.get('/static/../backend/app.py').status_code, 403)
+
     def test_update_lan_address_keeps_codes_and_restricts_access(self):
         app = create_app(lan_host='192.168.1.20')
         local = TestClient(app)

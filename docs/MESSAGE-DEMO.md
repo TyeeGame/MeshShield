@@ -55,6 +55,8 @@ Sending many approved messages can rate-limit and quarantine the approved slot t
 
 ## Restart and limits
 
+If the hotspot reassigns your IP while the LAN-enabled backend is still running, open `http://127.0.0.1:8000/messages` on the host laptop. Under Operator setup, enter the new Wi-Fi IPv4 address and click **Update address**. This changes the accepted LAN address and share URL without resetting codes, the inbox or the gateway. Give your partner the new URL. The old URL is no longer accepted. The field does not assign an address to Windows or enable a localhost-only listener; start with `--lan-host` first. Updates are in memory, so after a backend restart use the current address in the startup command again.
+
 Ctrl+C stops the backend. Restart with the same command, checking the current COM port and LAN address if they changed. Codes and inbox history reset on backend restart. Share the new codes. Only the latest 50 approved texts and 50 decision records are kept in memory, and at most 16 messages can await gateway decisions. An HTTP error can occur after a successful delivery, so check the inbox before manually sending again. This is a demo relay, not a durable messenger or protection against network-level denial of service.
 
 The backend does not reflash or reconfigure your board automatically. Existing physical validation in VALIDATION.md applies to the original virtual-device demo; the new relay requires its own flash and two-laptop test.

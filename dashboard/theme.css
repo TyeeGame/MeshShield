@@ -24,3 +24,6 @@
   color: var(--text);
   background: var(--navy);
 }
+
+.eyebrow { color: var(--slate); }
+footer { color: var(--slate); }

@@ -114,7 +114,7 @@ function card(n, online) {
 
   const ctx=c.canvas.getContext('2d'),history=n.history,max=Math.max(5,...history);
 
-  ctx.clearRect(0,0,520,100);ctx.strokeStyle='#24404d';ctx.beginPath();ctx.moveTo(0,85);ctx.lineTo(520,85);ctx.stroke();
+  ctx.clearRect(0,0,520,100);ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--border').trim()||'#415a77';ctx.beginPath();ctx.moveTo(0,85);ctx.lineTo(520,85);ctx.stroke();
 
   ctx.strokeStyle='#5be0b3';ctx.lineWidth=2;ctx.beginPath();history.forEach((v,i)=>{const x=i/Math.max(1,history.length-1)*520,y=85-v/max*70;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();
 

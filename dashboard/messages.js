@@ -1,6 +1,6 @@
 'use strict';
 const el=id=>document.getElementById(id);
-let sending=false, readerKey='', polling=false;
+let sending=false, readerKey='', polling=false, addressInitialized=false;
 async function copyCode(inputId, label) {
   const input=el(inputId);
   if(!input.value){el('copy-status').textContent='Wait for the codes to load.';return;}
@@ -14,6 +14,15 @@ async function copyCode(inputId, label) {
 }
 el('copy-sender').addEventListener('click',()=>copyCode('sender-code','Sender code'));
 el('copy-reader').addEventListener('click',()=>copyCode('reader-code','Inbox code'));
+el('lan-form').addEventListener('submit',async event=>{
+  event.preventDefault();el('save-address').disabled=true;
+  try {
+    await api('/api/messages/lan-address',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:el('lan-address').value.trim()})});
+    el('lan-status').textContent='Address updated. Give your partner the new page address below. Codes and inbox are unchanged.';
+    await refresh();
+  } catch(error){el('lan-status').textContent=error.message;}
+  finally{el('save-address').disabled=false;}
+});
 async function api(url, options={}) {
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),7000);
@@ -52,6 +61,7 @@ async function refresh(){
     if(location.hostname==='localhost'||location.hostname==='127.0.0.1'){
       const operator=await api('/api/messages/operator');
       el('operator').hidden=false;el('audit-panel').hidden=false;
+      if(!addressInitialized){el('lan-address').value=operator.lan_host||'';addressInitialized=true;}
       el('share').textContent=operator.share_url||'Local preview only. Restart with --lan-host to share.';
       // Do not disrupt selection or manual copying during the one-second poll.
       if(el('sender-code').value!==operator.sender_key)el('sender-code').value=operator.sender_key;

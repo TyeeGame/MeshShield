@@ -1,5 +1,6 @@
 import asyncio
 import secrets
+import ipaddress
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
@@ -29,6 +30,10 @@ class MessageRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     text: str = Field(min_length=1, max_length=160)
     key: str = Field(default='', max_length=64)
+
+class LanAddressRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    address: str = Field(min_length=1, max_length=15)
 
 
 def create_app(simulate=True, port=None, z=3.0, lan_host=None):
@@ -98,7 +103,23 @@ def create_app(simulate=True, port=None, z=3.0, lan_host=None):
         port_number = request.url.port or 80
         return dict(messages.status(), sender_key=messages.sender_key,
                     reader_key=messages.reader_key, audit=list(messages.audit),
+                    lan_host=lan_host,
                     share_url=f'http://{lan_host}:{port_number}/messages' if lan_host else None)
+
+    @app.post('/api/messages/lan-address')
+    async def update_lan_address(c: LanAddressRequest):
+        nonlocal lan_host
+        if not lan_host:
+            raise HTTPException(409, 'Start the backend with --lan-host first to enable LAN sharing')
+        try:
+            address = ipaddress.IPv4Address(c.address.strip())
+            if (address.is_loopback or address.is_unspecified or address.is_multicast or
+                    address.is_reserved or int(address) == 0xffffffff):
+                raise ValueError()
+        except ValueError:
+            raise HTTPException(422, 'Enter your laptop’s Wi-Fi IPv4 address, without http:// or a port')
+        lan_host = str(address)
+        return {'lan_host': lan_host}
 
     @app.post('/api/messages/send')
     async def send_message(c: MessageRequest):

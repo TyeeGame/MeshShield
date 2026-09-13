@@ -11,6 +11,25 @@ from simulator.gateway import Gateway
 
 
 class MessageApiTests(unittest.TestCase):
+    def test_update_lan_address_keeps_codes_and_restricts_access(self):
+        app = create_app(lan_host='192.168.1.20')
+        local = TestClient(app)
+        before = local.get('/api/messages/operator').json()
+        response = local.post('/api/messages/lan-address', json={'address': '10.131.10.207'})
+        self.assertEqual(response.status_code, 200)
+        after = local.get('/api/messages/operator').json()
+        self.assertEqual(after['share_url'], 'http://10.131.10.207:80/messages')
+        self.assertEqual(after['sender_key'], before['sender_key'])
+        self.assertEqual(after['reader_key'], before['reader_key'])
+        remote = TestClient(app, client=('10.131.10.208', 12345), base_url='http://10.131.10.207')
+        self.assertEqual(remote.get('/messages').status_code, 200)
+        self.assertEqual(remote.get('/messages', headers={'host': '192.168.1.20'}).status_code, 403)
+        self.assertEqual(remote.post('/api/messages/lan-address', json={'address': '10.0.0.1'}).status_code, 403)
+        for invalid in ('127.0.0.1', '0.0.0.0', '224.0.0.1', '255.255.255.255', 'bad', '10.1.1.999'):
+            self.assertEqual(local.post('/api/messages/lan-address', json={'address': invalid}).status_code, 422)
+        disabled = TestClient(create_app())
+        self.assertEqual(disabled.post('/api/messages/lan-address', json={'address': '10.0.0.1'}).status_code, 409)
+
     def test_relay_allow_deny_and_inbox_isolation(self):
         app = create_app(lan_host='192.168.1.20')
         with TestClient(app) as client:

@@ -40,3 +40,7 @@ a { color: var(--text); text-underline-offset: 4px; }
 .page-nav a[aria-current="page"] { color: var(--text); border-bottom-color: var(--text); }
 
 :where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--slate); outline-offset: 3px; }
+
+button:not(:disabled):hover { filter: brightness(1.08); }
+.page-nav a:hover { color: var(--text); background: var(--surface); }
+button:disabled { cursor: not-allowed; }

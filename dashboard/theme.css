@@ -31,3 +31,5 @@ footer { color: var(--slate); }
 h1, h2 { font-weight: 600; text-wrap: balance; }
 button, input, textarea, select { font-family: inherit; }
 header p { max-width: 64ch; }
+
+button { min-height: 40px; font-size: 13px; line-height: 1.4; }

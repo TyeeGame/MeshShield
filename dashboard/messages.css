@@ -15,7 +15,7 @@ label span,small{font-weight:400;color:var(--text)}
 input,textarea{width:100%;padding:13px;border-radius:7px;border:1px solid var(--border);background:var(--navy);color:var(--text);font:inherit}
 textarea{resize:vertical}
 .action{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px}
-button{border:0;border-radius:7px;padding:13px 18px;background:#66e0c4;color:#082c26;font-weight:700;white-space:nowrap;cursor:pointer}
+button{border:0;border-radius:7px;padding:13px 18px;background:var(--text);color:var(--navy);font-weight:700;white-space:nowrap;cursor:pointer}
 button:disabled{opacity:.4;cursor:wait}
 button:focus-visible,input:focus,textarea:focus{outline:2px solid #66e0c4;outline-offset:3px}
 #result{padding:14px;border-left:3px solid #5b7287}

@@ -29,7 +29,7 @@ p{font-size:14px;color:var(--text);line-height:1.6}
 .graph{width:100%;height:80px;margin-top:16px;background:var(--navy);border-radius:6px}
 .freshness{font-size:11px;color:var(--text);margin:12px 0;min-height:32px}
 .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-button,select{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--border);background:#59d8af;color:#102a26;border-radius:6px;padding:10px 14px;font-weight:600}
+button,select{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--text);color:var(--navy);border-radius:6px;padding:10px 14px;font-weight:600}
 .secondary,select{background:var(--surface);color:var(--text)}
 button:disabled{opacity:.4;cursor:default}
 .switch{font-size:12px;display:flex;gap:9px;align-items:center}

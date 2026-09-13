@@ -46,7 +46,7 @@ el('send-form').addEventListener('submit',async event=>{
     el('result').dataset.status=data.status;
     const source=data.source==='SIMULATION'?'Software simulator':'Argon';
     el('result').textContent=data.status==='delivered'?`${source} allowed this message. Added to the partner inbox.`:data.status==='blocked'?`${source} blocked this message: ${data.reason.replaceAll('_',' ')}.${data.quarantine_ms?' Quarantine remaining: '+Math.ceil(data.quarantine_ms/1000)+' seconds.':''}`:data.reason;
-  } catch(error){el('result').textContent=`Delivery not confirmed: ${error.message}. Check the inbox before sending again.`;}
+  } catch(error){el('result').dataset.status='not_delivered';el('result').textContent=`Delivery not confirmed: ${error.message}. Check the inbox before sending again.`;}
   finally{sending=false;await refresh();}
 });
 el('inbox-form').addEventListener('submit',event=>{event.preventDefault();readerKey=el('inbox-key').value.trim();el('inbox').replaceChildren();refresh();});

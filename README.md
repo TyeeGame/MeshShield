@@ -1,4 +1,4 @@
-# MeshShield — one Argon, one USB cable
+# MeshShield
 
 Two **simulated endpoints** send laptop-generated packets over USB. The real Argon validates format, CRC, version and message type, applies independent token buckets (capacity 5; refill 5/second), and quarantines a slot for 15 seconds after three violations within ten seconds. Quarantine drops do not extend expiry; release permits later detection again. Slots are host-assigned, not authenticated identities. CRC detects corruption, not forgery.
 

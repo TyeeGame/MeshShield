@@ -57,6 +57,7 @@ async function refresh(){
   try {
     const state=await api('/api/messages/status');
     el('connection').textContent=state.ready?'GATEWAY READY':'GATEWAY NOT READY';
+    el('connection').dataset.state=state.ready?'ready':'waiting';
     el('send').disabled=sending||!state.ready;
     el('mode').textContent=state.mode==='HARDWARE'?'ARGON HARDWARE · REAL MESSAGE RELAY':'FULL SOFTWARE SIMULATION · NO HARDWARE ENFORCEMENT';
     if(!state.ready)el('connection').textContent=state.supported?'Waiting for gateway readiness':'Connect and flash message-capable firmware';
@@ -77,7 +78,7 @@ async function refresh(){
       el('inbox-status').textContent=inbox.ready?'Inbox open · most recent 50 approved messages':'Gateway offline · showing previously approved messages';
       rows(el('inbox'),inbox.items,(li,item)=>{const stamp=document.createElement('small');stamp.textContent=`${new Date(item.time*1000).toLocaleTimeString()} · ${item.source==='HARDWARE'?'Argon approved':'Simulator approved'}`;li.append(stamp,document.createTextNode(item.text));});
     }
-  } catch(error){el('connection').textContent='OFFLINE / REQUEST FAILED';el('send').disabled=true;el('inbox-status').textContent=error.message;}
+  } catch(error){el('connection').dataset.state='offline';el('connection').textContent='OFFLINE / REQUEST FAILED';el('send').disabled=true;el('inbox-status').textContent=error.message;}
   finally{polling=false;}
 }
 refresh();setInterval(refresh,1000);

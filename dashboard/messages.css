@@ -43,3 +43,8 @@ input, textarea { line-height: 1.5; }
 input::placeholder, textarea::placeholder { color: var(--slate); opacity: 1; }
 label { font-size: 13px; }
 label span { display: block; margin-top: 4px; font-size: 12px; }
+
+.code-row input { font-size: 13px; letter-spacing: .015em; }
+.code-row button { background: var(--surface); color: var(--text); border: 1px solid var(--slate); }
+#copy-status, #lan-status { min-height: 1.6em; font-size: 13px; }
+#share { line-height: 1.6; }

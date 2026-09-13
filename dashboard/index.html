@@ -1,19 +1,91 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>MeshShield · Gateway</title><link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" defer></script></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MeshShield · Gateway</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/app.js" defer>
+</script>
+</head>
 <body>
-<header><div><span class="eyebrow">APPLICATION-LAYER SECURITY LAB</span><h1>MeshShield<span class="mark">◈</span></h1></div><div class="connection"><strong id="mode">CONNECTING</strong><span id="gateway">Waiting for gateway</span></div></header>
+<header>
+<div>
+<span class="eyebrow">APPLICATION-LAYER SECURITY LAB</span>
+<h1>MeshShield<span class="mark">◈</span>
+</h1>
+</div>
+<div class="connection">
+<strong id="mode">CONNECTING</strong>
+<span id="gateway">Waiting for gateway</span>
+</div>
+</header>
 <main>
-<p><a href="/messages">Open the real-message demo →</a></p>
-<section class="intro"><div><h2>One Argon. Two virtual devices.</h2><p>Laptop-generated traffic is filtered on the real Argon over USB. Learned rate detection runs on this laptop.</p></div><span class="pill">USB DEMONSTRATION</span></section>
-<p id="notice" role="status" aria-live="polite"></p>
-<section id="nodes" class="nodes" aria-label="Endpoint status"></section>
-<section class="panel"><div class="section-title"><div><span class="eyebrow">LEARNED STATISTICAL DETECTOR</span><h2>Teach normal. Watch for change.</h2></div><label class="switch"><input id="auto" type="checkbox"> Automatic containment</label></div>
-<p>Keep both nodes in NORMAL for 60 seconds of clean observations. Two consecutive high-rate windows trigger an alert. Scores measure deviation, not probability of compromise.</p>
-<div class="actions"><button id="train">Start clean baseline</button><span id="training">No baseline learned</span></div><p class="muted">Training finishes automatically after 12 clean windows per node.</p><p class="muted" id="threshold"></p>
-<div id="simulation" hidden><label for="sim-mode">SIMULATION ONLY · Node 2 attack mode</label><select id="sim-mode"><option>NORMAL</option><option>UNKNOWN_TYPE</option><option>FLOOD</option><option>ANOMALY</option></select><span class="muted">Use this selector in hardware or full simulation mode. No button or Xenons needed.</span></div>
+<p>
+<a href="/messages">Open the real-message demo →</a>
+</p>
+<section class="intro">
+<div>
+<h2>One Argon. Two virtual devices.</h2>
+<p>Laptop-generated traffic is filtered on the real Argon over USB. Learned rate detection runs on this laptop.</p>
+</div>
+<span class="pill">USB DEMONSTRATION</span>
 </section>
-<section class="panel"><div class="section-title"><h2>Recent incidents & commands</h2><span class="muted" id="diagnostics"></span></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Endpoint</th><th>Event</th></tr></thead><tbody id="incidents"></tbody></table></div><div id="commands" class="muted"></div></section>
+<p id="notice" role="status" aria-live="polite">
+</p>
+<section id="nodes" class="nodes" aria-label="Endpoint status">
+</section>
+<section class="panel">
+<div class="section-title">
+<div>
+<span class="eyebrow">LEARNED STATISTICAL DETECTOR</span>
+<h2>Teach normal. Watch for change.</h2>
+</div>
+<label class="switch">
+<input id="auto" type="checkbox"> Automatic containment</label>
+</div>
+<p>Keep both nodes in NORMAL for 60 seconds of clean observations. Two consecutive high-rate windows trigger an alert. Scores measure deviation, not probability of compromise.</p>
+<div class="actions">
+<button id="train">Start clean baseline</button>
+<span id="training">No baseline learned</span>
+</div>
+<p class="muted">Training finishes automatically after 12 clean windows per node.</p>
+<p class="muted" id="threshold">
+</p>
+<div id="simulation" hidden>
+<label for="sim-mode">SIMULATION ONLY · Node 2 attack mode</label>
+<select id="sim-mode">
+<option>NORMAL</option>
+<option>UNKNOWN_TYPE</option>
+<option>FLOOD</option>
+<option>ANOMALY</option>
+</select>
+<span class="muted">Use this selector in hardware or full simulation mode. No button or Xenons needed.</span>
+</div>
+</section>
+<section class="panel">
+<div class="section-title">
+<h2>Recent incidents & commands</h2>
+<span class="muted" id="diagnostics">
+</span>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Time</th>
+<th>Endpoint</th>
+<th>Event</th>
+</tr>
+</thead>
+<tbody id="incidents">
+</tbody>
+</table>
+</div>
+<div id="commands" class="muted">
+</div>
+</section>
 <footer>CRC detects corruption; it does not authenticate devices. Device identities are host-assigned simulation slots, not authenticated endpoints. This filters application messages, not Wi-Fi packets.</footer>
 </main>
-</body></html>
+</body>
+</html>
